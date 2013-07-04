@@ -14,6 +14,8 @@ module Rack
 
       headers = HeaderHash.new(headers)
 
+      controller_name = env["action_dispatch.request.parameters"]["controller"]
+
       new_body = ""
       body.each do |b|
         b.force_encoding('UTF-8') if RUBY_VERSION > '1.9.0'
@@ -25,7 +27,20 @@ module Rack
           if container
             title = parsed_body.at("title")
 
-            "%s%s" % [title, container.inner_html]
+            script = <<-EOS
+              <script type="text/javascript">
+                $(document).ready(function(event) {
+                    $('#pjax-controller-css').attr('href', "/assets/#{controller_name}.css?body=1");
+
+                    var script  = document.createElement('script');
+                    script.type = "text/javascript";
+                    script.src  = "/assets/#{controller_name}.js";
+                    $("head").append(script);
+                  });
+              </script>
+            EOS
+
+            "%s%s%s" % [title, container.inner_html, script]
           else
             b
           end
